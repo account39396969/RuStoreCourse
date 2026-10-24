@@ -14,6 +14,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,9 +27,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class AppInfo(
     val id: String,
@@ -54,6 +66,20 @@ val storefrontApps = listOf(
 
 val AccentColor = Color(0xFF0077FF)
 
+class AppListViewModel : ViewModel() {
+    private val _apps = MutableStateFlow(mockApps)
+    val apps = _apps.asStateFlow()
+
+    private val _snackbarEvent = MutableSharedFlow<Unit>()
+    val snackbarEvent = _snackbarEvent.asSharedFlow()
+
+    fun onToolbarClicked() {
+        viewModelScope.launch {
+            _snackbarEvent.emit(Unit)
+        }
+    }
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +90,6 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "app_list") {
                     composable("app_list") {
                         AppListScreen(
-                            apps = mockApps,
                             onAppClick = { navController.navigate("app_details") }
                         )
                     }
@@ -81,10 +106,27 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppListScreen(apps: List<AppInfo>, onAppClick: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        AppToolbar()
+fun AppListScreen(
+    onAppClick: () -> Unit,
+    viewModel: AppListViewModel = viewModel()
+) {
+    val apps by viewModel.apps.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.snackbarEvent.collect {
+            snackbarHostState.showSnackbar("Клик по тулбару!")
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            AppToolbar(onClick = { viewModel.onToolbarClicked() })
+        }
+    ) { paddingValues ->
         LazyColumn(
+            modifier = Modifier.padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -96,11 +138,12 @@ fun AppListScreen(apps: List<AppInfo>, onAppClick: () -> Unit) {
 }
 
 @Composable
-fun AppToolbar() {
+fun AppToolbar(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(AccentColor)
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

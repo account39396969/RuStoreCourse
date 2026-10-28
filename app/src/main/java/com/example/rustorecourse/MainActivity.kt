@@ -27,58 +27,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-
-data class AppInfo(
-    val id: String,
-    val name: String,
-    val description: String,
-    val category: String
-)
-
-val mockApps = listOf(
-    AppInfo("1", "RuStore", "Магазин приложений", "Инструменты"),
-    AppInfo("2", "Гильдия Героев", "Легендарный рейд героев", "Игры"),
-    AppInfo("3", "VK", "Социальная сеть", "Социальные")
-)
-
-val storefrontApps = listOf(
-    AppInfo("s1", "App 1", "Описание 1", "Категория"),
-    AppInfo("s2", "App 2", "Описание 2", "Категория"),
-    AppInfo("s3", "App 3", "Описание 3", "Категория"),
-    AppInfo("s4", "App 4", "Описание 4", "Категория"),
-    AppInfo("s5", "App 5", "Описание 5", "Категория"),
-    AppInfo("s6", "App 6", "Описание 6", "Категория"),
-    AppInfo("s7", "App 7", "Описание 7", "Категория"),
-    AppInfo("s8", "App 8", "Описание 8", "Категория"),
-    AppInfo("s9", "App 9", "Описание 9", "Категория")
-)
+import com.example.rustorecourse.domain.model.App
+import com.example.rustorecourse.presentation.viewmodel.AppListViewModel
 
 val AccentColor = Color(0xFF0077FF)
 
-class AppListViewModel : ViewModel() {
-    private val _apps = MutableStateFlow(mockApps)
-    val apps = _apps.asStateFlow()
-
-    private val _snackbarEvent = MutableSharedFlow<Unit>()
-    val snackbarEvent = _snackbarEvent.asSharedFlow()
-
-    fun onToolbarClicked() {
-        viewModelScope.launch {
-            _snackbarEvent.emit(Unit)
-        }
-    }
-}
+val storefrontApps = listOf(
+    App("s1", "App 1", "Описание 1", "Категория"),
+    App("s2", "App 2", "Описание 2", "Категория"),
+    App("s3", "App 3", "Описание 3", "Категория"),
+    App("s4", "App 4", "Описание 4", "Категория"),
+    App("s5", "App 5", "Описание 5", "Категория"),
+    App("s6", "App 6", "Описание 6", "Категория"),
+    App("s7", "App 7", "Описание 7", "Категория"),
+    App("s8", "App 8", "Описание 8", "Категория"),
+    App("s9", "App 9", "Описание 9", "Категория")
+)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -214,7 +182,7 @@ fun AppDetailsScreen(onBackClick: () -> Unit, onStorefrontAppClick: () -> Unit) 
 
 @Composable
 fun AppListItemRow(
-    app: AppInfo,
+    app: App,
     onClick: () -> Unit,
     isVertical: Boolean = false
 ) {

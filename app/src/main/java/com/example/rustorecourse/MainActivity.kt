@@ -14,6 +14,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,36 +27,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
-data class AppInfo(
-    val id: String,
-    val name: String,
-    val description: String,
-    val category: String
-)
-
-val mockApps = listOf(
-    AppInfo("1", "RuStore", "Магазин приложений", "Инструменты"),
-    AppInfo("2", "Гильдия Героев", "Легендарный рейд героев", "Игры"),
-    AppInfo("3", "VK", "Социальная сеть", "Социальные")
-)
-
-val storefrontApps = listOf(
-    AppInfo("s1", "App 1", "Описание 1", "Категория"),
-    AppInfo("s2", "App 2", "Описание 2", "Категория"),
-    AppInfo("s3", "App 3", "Описание 3", "Категория"),
-    AppInfo("s4", "App 4", "Описание 4", "Категория"),
-    AppInfo("s5", "App 5", "Описание 5", "Категория"),
-    AppInfo("s6", "App 6", "Описание 6", "Категория"),
-    AppInfo("s7", "App 7", "Описание 7", "Категория"),
-    AppInfo("s8", "App 8", "Описание 8", "Категория"),
-    AppInfo("s9", "App 9", "Описание 9", "Категория")
-)
+import com.example.rustorecourse.domain.model.App
+import com.example.rustorecourse.presentation.viewmodel.AppListViewModel
 
 val AccentColor = Color(0xFF0077FF)
+
+val storefrontApps = listOf(
+    App("s1", "App 1", "Описание 1", "Категория"),
+    App("s2", "App 2", "Описание 2", "Категория"),
+    App("s3", "App 3", "Описание 3", "Категория"),
+    App("s4", "App 4", "Описание 4", "Категория"),
+    App("s5", "App 5", "Описание 5", "Категория"),
+    App("s6", "App 6", "Описание 6", "Категория"),
+    App("s7", "App 7", "Описание 7", "Категория"),
+    App("s8", "App 8", "Описание 8", "Категория"),
+    App("s9", "App 9", "Описание 9", "Категория")
+)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +58,6 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "app_list") {
                     composable("app_list") {
                         AppListScreen(
-                            apps = mockApps,
                             onAppClick = { navController.navigate("app_details") }
                         )
                     }
@@ -81,10 +74,27 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppListScreen(apps: List<AppInfo>, onAppClick: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        AppToolbar()
+fun AppListScreen(
+    onAppClick: () -> Unit,
+    viewModel: AppListViewModel = viewModel()
+) {
+    val apps by viewModel.apps.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.snackbarEvent.collect {
+            snackbarHostState.showSnackbar("Клик по тулбару!")
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            AppToolbar(onClick = { viewModel.onToolbarClicked() })
+        }
+    ) { paddingValues ->
         LazyColumn(
+            modifier = Modifier.padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -96,11 +106,12 @@ fun AppListScreen(apps: List<AppInfo>, onAppClick: () -> Unit) {
 }
 
 @Composable
-fun AppToolbar() {
+fun AppToolbar(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(AccentColor)
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -171,7 +182,7 @@ fun AppDetailsScreen(onBackClick: () -> Unit, onStorefrontAppClick: () -> Unit) 
 
 @Composable
 fun AppListItemRow(
-    app: AppInfo,
+    app: App,
     onClick: () -> Unit,
     isVertical: Boolean = false
 ) {
